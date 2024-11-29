@@ -45,7 +45,7 @@ export class TzktService implements Indexer {
   constructor(private subjectService: SubjectService) {
     this.Tezos = new TezosToolkit(CONSTANTS.NODE_URL[0]);
     const customHandlers = new Map<string, Handler>([
-      ['ipfs', new IpfsHttpHandler('cloudflare-ipfs.com')],
+      ['ipfs', new IpfsHttpHandler('ipfs.io')],
       ['tezos-storage', new TezosStorageHandler()]
     ]);
     const customMetadataProvider = new MetadataProvider(customHandlers);
@@ -54,13 +54,13 @@ export class TzktService implements Indexer {
   async getContractAddresses(pkh: string): Promise<any> {
     return fetch(`${CONSTANTS.API_URL}/operations/originations?contractManager=${pkh}`)
       .then((response) => response.json())
-      .then((data) =>
-        data
+      .then((data) => {
+        return data
           .map((op: any) => {
             return op?.status === 'applied' && op?.originatedContract?.kind === 'delegator_contract' ? op.originatedContract.address : '';
           })
-          .filter((address: string) => address.length)
-      );
+          .filter((address: string) => address.length);
+      });
   }
 
   async getHashAndBlockByIds(transactionIds: number[]): Promise<any> {
@@ -100,12 +100,39 @@ export class TzktService implements Indexer {
           return 1;
         }
       });
-      const payload: string = (data.balance ? data.balance : '') + (data.counter ? data.counter : '') + (tokenBalances ? JSON.stringify(tokenBalances) : '');
+      const payload: string =
+        (data.balance ?? '') +
+        (data.counter ?? '') +
+        (tokenBalances ? JSON.stringify(tokenBalances) : '') +
+        (data.stakedBalance ?? '') +
+        (data.unstakedBalance ?? '') +
+        (data.delegate?.address ?? '');
       const input = Buffer.from(payload);
       const hash = cryptob.createHash('sha512').update(input).digest('hex');
       if (payload && payload !== '[]') {
-        const balance = data?.balance !== undefined ? data.balance : 0;
-        return { counter: hash, unknownTokenIds, tokens: tokenBalances, balance };
+        let availableBalance: number = 0;
+        if (data?.balance) {
+          try {
+            availableBalance = Number(
+              Big(data.balance ?? 0)
+                .minus(data.stakedBalance ?? 0)
+                .minus(data.unstakedBalance ?? 0)
+                .toFixed(0)
+            );
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        return {
+          counter: hash,
+          unknownTokenIds,
+          tokens: tokenBalances,
+          balance: data.balance ?? 0,
+          stakedBalance: data.stakedBalance ?? 0,
+          unstakedBalance: data.unstakedBalance ?? 0,
+          availableBalance,
+          delegate: data.delegate?.address
+        };
       }
     }
     return { counter: '', tokens: tokenBalances };
@@ -115,7 +142,7 @@ export class TzktService implements Indexer {
     return Boolean(accountInfo && (accountInfo?.type === 'user' || accountInfo?.balance || accountInfo?.tokenBalancesCount));
   }
   async getOperations(address: string, knownTokenIds: string[], wallet: WalletObject): Promise<any> {
-    const ops = await fetch(`${CONSTANTS.API_URL}/accounts/${address}/operations?limit=20&type=delegation,origination,transaction`)
+    const ops = await fetch(`${CONSTANTS.API_URL}/accounts/${address}/operations?limit=20&type=delegation,origination,transaction,staking`)
       .then((response) => response.json())
       .then((data) =>
         data
@@ -150,6 +177,11 @@ export class TzktService implements Indexer {
                     amount = op.contractBalance.toString();
                   }
                   opId = op?.id ? `o${op.id}` : '';
+                  break;
+                case 'staking':
+                  destination = op.baker;
+                  entrypoint = op.action;
+                  amount = op.amount.toString();
                   break;
                 default:
                   console.log(`Ignoring kind ${op.type}`);
@@ -242,13 +274,13 @@ export class TzktService implements Indexer {
       this.filterMetadata(meta);
     }
     // default to 0
-    if (meta?.decimals === undefined) {
+    if (meta && meta?.decimals === undefined) {
       meta.decimals = 0;
     }
     if (!(meta && (meta.name || meta.symbol) && !isNaN(meta.decimals) && meta.decimals >= 0) || metadataSource === MetadataSource.TaquitoOnly) {
       meta = null;
     }
-    if (!meta && metadataSource !== MetadataSource.TzktOnly) {
+    if (!meta && metadataSource !== MetadataSource.TzktOnly && CONSTANTS.MAINNET) {
       console.debug('fallback on taquito', { contractAddress, id });
       meta = await this.getTokenMetadataWithTaquito(contractAddress, id);
       if (meta) {

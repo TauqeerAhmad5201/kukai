@@ -77,7 +77,22 @@
           left: 0rem;
           margin: 1.5rem 0rem 1.5rem 0rem;
           text-decoration: none;
-
+          &.stake {
+            left: calc(100% - 10rem);
+            width: 12rem;
+            & button {
+              height: 3.75rem;
+              & img {
+                padding-left: 0.5rem;
+                width: 1.5rem;
+                height: 1.5rem;
+              }
+            }
+            & button:disabled {
+              opacity: 0.4;
+              cursor: not-allowed;
+            }
+          }
           & button {
             width: auto;
             &.back {
@@ -89,7 +104,6 @@
               font-weight: 500;
               padding: 0.75rem 1.25rem;
               width: auto;
-
               & img {
                 height: 1rem;
                 margin: 0 1rem 0 0;
@@ -184,7 +198,7 @@
 
       & button,
       & .current {
-        width: 10rem;
+         max-width: 11rem;
       }
 
       & .current {
@@ -321,7 +335,7 @@
       width: 6rem;
     }
     button {
-      width: 8rem;
+      //width: 8rem;
       padding: 1rem;
       color: v.$base-blue-color-lightened;
       background-color: v.$base-background-color;

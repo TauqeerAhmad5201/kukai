@@ -8,6 +8,7 @@ import { MessageService } from '../../../../services/message/message.service';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { SubjectService } from '../../../../services/subject/subject.service';
+import { CONSTANTS as _CONSTANTS } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-delegate-page',
@@ -21,7 +22,8 @@ export class DelegatePageComponent implements OnInit, OnDestroy {
   isShowingCustom = false;
   balanceXTZ = 0;
   private subscriptions: Subscription = new Subscription();
-
+  CONSTANTS = _CONSTANTS;
+  isMobile = false;
   constructor(
     public delegateService: DelegateService,
     public router: Router,
@@ -52,7 +54,13 @@ export class DelegatePageComponent implements OnInit, OnDestroy {
     );
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    const mobileCheck = () => {
+      this.isMobile = !!parseInt(document.documentElement.style.getPropertyValue('--is-mobile'));
+    };
+    window.addEventListener('resize', mobileCheck);
+    mobileCheck();
+  }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();

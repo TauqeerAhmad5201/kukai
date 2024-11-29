@@ -206,8 +206,8 @@ export class PrepareSendComponent extends ModalComponent implements OnInit, OnCh
         const callback = (res) => {
           if (res) {
             if (res.error) {
-              this.formInvalid = res.error;
-              this.latestSimError = res.error;
+              this.formInvalid = res.error.message;
+              this.latestSimError = res.error.message;
             } else {
               this.defaultTransactionParams = res;
               this.formInvalid = '';
@@ -516,7 +516,7 @@ export class PrepareSendComponent extends ModalComponent implements OnInit, OnCh
   }
   maxToSend(account: Account): string {
     if (account && account instanceof ImplicitAccount && !this.tokenTransfer) {
-      let accountBalance = Big(account.balanceXTZ).div(1000000);
+      let accountBalance = Big(account.availableBalance ?? account.balanceXTZ).div(1000000);
       accountBalance = accountBalance.minus(this.customFee && Number(this.customFee) ? Number(this.customFee) : this.defaultTransactionParams.fee);
       if (!this.isMultipleDestinations) {
         accountBalance = accountBalance.minus(
@@ -537,7 +537,9 @@ export class PrepareSendComponent extends ModalComponent implements OnInit, OnCh
             .toFixed();
         }
       } else {
-        return Big(account.balanceXTZ).div(1000000).toString();
+        return Big(account.availableBalance ?? account.balanceXTZ)
+          .div(1000000)
+          .toString();
       }
     }
   }

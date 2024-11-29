@@ -110,7 +110,7 @@ export class EstimateService {
       if (!tx.amount) {
         tx.amount = 0;
       }
-      if (tx.destination.slice(0, 3) !== 'KT1' && !tokenTransfer) {
+      if (tx.destination.slice(0, 3) !== 'KT1' && !tokenTransfer && !(tx.destination === from && tx.parameters)) {
         tx.amount = 0.000001;
       }
       tx.gasLimit = simulation.gasLimit;
@@ -171,7 +171,8 @@ export class EstimateService {
           .toPromise();
       } else if (typeof result?.success === 'boolean' && result.success === false) {
         console.log(result);
-        throw new Error(result.payload.msg);
+        const { msg, errorId } = result.payload;
+        throw { message: msg, errorId };
       }
     }
     return null;
@@ -189,7 +190,7 @@ export class EstimateService {
     }
     if (content.metadata.operation_result.balance_updates) {
       for (const balanceUpdate of content.metadata.operation_result.balance_updates) {
-        if (balanceUpdate.contract === this.pkh) {
+        if (balanceUpdate.contract === this.pkh || balanceUpdate?.staker?.contract === this.pkh) {
           burn = burn.minus(balanceUpdate.change);
         }
       }
@@ -226,6 +227,8 @@ export class EstimateService {
       storageUsage < 0 ||
       storageUsage > CONSTANTS.HARD_LIMITS.hard_storage_limit_per_operation
     ) {
+      console.log(gasUsage, '>', CONSTANTS.HARD_LIMITS.hard_gas_limit_per_operation);
+      console.log(storageUsage, '>', CONSTANTS.HARD_LIMITS.hard_storage_limit_per_operation);
       throw new Error('InvalidUsageCalculation');
     }
     return this.getOpLimits(content, op, gasUsage, storageUsage);
@@ -412,7 +415,8 @@ export class EstimateService {
           .toPromise();
       } else if (typeof result?.success === 'boolean' && result.success === false) {
         console.log(result);
-        throw new Error(result.payload.msg);
+        const { msg, errorId } = result.payload;
+        throw { message: msg, errorId };
       }
     }
     return null;

@@ -161,7 +161,8 @@ export class UriHandlerComponent implements OnInit, OnDestroy {
     return this.permissionRequest || this.externalRequest || this.signRequest;
   }
   async handlePermissionRequest(message: any): Promise<void> {
-    console.log('## permission request');
+    this.beaconService.pairingLogEnd(message?.senderId);
+    console.log('## permission request', message);
     if (message.version) {
       message.scopes = message.scopes.filter((scope: PermissionScope) => [PermissionScope.OPERATION_REQUEST, PermissionScope.SIGN].includes(scope));
     }
@@ -238,7 +239,7 @@ export class UriHandlerComponent implements OnInit, OnDestroy {
         console.warn('Invalid sign payload');
         await this.beaconService.rejectOnUnknown(message);
         return false;
-      } else if (!['05', '80'].includes(hexString.slice(0, 2))) {
+      } else if (!['05'].includes(hexString.slice(0, 2))) {
         console.warn('Unsupported prefix:' + hexString.slice(0, 2));
         await this.beaconService.rejectOnUnknown(message);
         return false;

@@ -345,7 +345,7 @@ export class EmbeddedComponent implements OnInit {
       }
     },
     tesserart: {
-      origins: ['*.tesserart.xyz', 'https://tesserart.xyz'],
+      origins: ['*.tesserart.xyz', 'https://tesserart.xyz', 'https://positions2024.ratata.gallery', '*.agoria.dev', 'https://agoria.dev'],
       permissions: {
         login: true,
         operations: true,
@@ -353,7 +353,7 @@ export class EmbeddedComponent implements OnInit {
       }
     },
     metapals: {
-      origins: ['https://sanctuary.metapals.pet', 'https://sanctuary.metapals.ai', 'https://sanctuary.metapals.dev'],
+      origins: ['https://sanctuary.metapals.pet', 'https://sanctuary.metapals.ai', 'https://sanctuary.metapals.dev', '*.kindredlabs.ai'],
       permissions: {
         login: true,
         operations: true,
@@ -378,6 +378,38 @@ export class EmbeddedComponent implements OnInit {
     },
     dns: {
       origins: ['https://dns.xyz', '*.dns.xyz'],
+      permissions: {
+        login: true,
+        operations: true,
+        micheline: true
+      }
+    },
+    trilli: {
+      origins: ['http://ec2-3-252-30-22.eu-west-1.compute.amazonaws.com:3000', 'https://login.pikesarena.com:3000', '*.pikesarena.com'],
+      permissions: {
+        login: true,
+        operations: true,
+        micheline: true
+      }
+    },
+    kairos: {
+      origins: ['https://kairos-mint.art'],
+      permissions: {
+        login: true,
+        operations: true,
+        micheline: true
+      }
+    },
+    tap: {
+      origins: ['https://kukai.web3.tnapps.xyz'],
+      permissions: {
+        login: true,
+        operations: true,
+        micheline: true
+      }
+    },
+    fxhash: {
+      origins: ['https://www.fxhash.xyz', 'https://fxhash.xyz'],
       permissions: {
         login: true,
         operations: true,
@@ -755,8 +787,10 @@ export class EmbeddedComponent implements OnInit {
   operationResponse(opHash: any) {
     let response: OperationResponse;
     let errorMessage = '';
+    let errorId = '';
     if (opHash?.error && opHash.errorMessage) {
       errorMessage = opHash.errorMessage;
+      errorId = opHash.errorId;
       opHash = opHash.error;
     }
     if (!opHash) {
@@ -783,8 +817,9 @@ export class EmbeddedComponent implements OnInit {
         type: ResponseTypes.operationResponse,
         failed: true,
         error: 'INVALID_PARAMETERS',
+        errorId,
         errorMessage
-      };
+      } as OperationResponse;
     } else if (utils.validOperationHash(opHash)) {
       response = {
         type: ResponseTypes.operationResponse,
